@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: event_system_db
+    environment:
+      POSTGRES_DB: ${EVENT_CONSUMER_POSTGRES_DB}
+      POSTGRES_USER: ${EVENT_CONSUMER_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${EVENT_CONSUMER_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${EVENT_CONSUMER_POSTGRES_USER} -d ${EVENT_CONSUMER_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer
+    container_name: event_system_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  consumer:
+    build:
+      context: .
+      target: consumer
+    container_name: event_system_consumer
+    volumes:
+      - .:/event_system
+      - poetry_cache:/root/.cache/pypoetry
+    ports:
+      - "${EVENT_CONSUMER_PORT}:8000"
+    environment:
+      - DATABASE_URL=${EVENT_CONSUMER_DATABASE_URL}
+      - EVENT_CONSUMER_PORT=${EVENT_CONSUMER_PORT}
+      - POSTGRES_DB=${EVENT_CONSUMER_POSTGRES_DB}
+      - POSTGRES_USER=${EVENT_CONSUMER_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${EVENT_CONSUMER_POSTGRES_PASSWORD}
+      - PYTHONPATH=/event_system
+      - PYTHONUNBUFFERED=1 
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - event_system/.env
+
+  propagator:
+    build:
+      context: .
+      target: propagator
+    container_name: event_system_propagator
+    volumes:
+      - .:/event_system
+      - poetry_cache:/root/.cache/pypoetry
+    environment:
+      - EVENT_PROPAGATOR_INTERVAL=${EVENT_PROPAGATOR_INTERVAL}
+      - EVENT_PROPAGATOR_TARGET_URL=${EVENT_PROPAGATOR_TARGET_URL}
+      - EVENT_PROPAGATOR_EVENTS_FILE=${EVENT_PROPAGATOR_EVENTS_FILE}
+      - PYTHONPATH=/event_system
+      - PYTHONUNBUFFERED=1 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - consumer
+    env_file:
+      - event_system/.env
+
+volumes:
+  postgres_data:
+  poetry_cache:

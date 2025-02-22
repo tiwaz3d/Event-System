@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Event System Metrics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .container { 
+            width: 80%; 
+            margin: 20px auto; 
+        }
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .message { margin: 5px 0; }
+        .user-joined { color: green; }
+        .user-left { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Event System Metrics</h2>
+        <div class="chat-box" id="chatBox"></div>
+        <canvas id="eventChart"></canvas>
+    </div>
+
+    <script>
+        let eventChart;
+        const colors = {
+            message: 'rgba(54, 162, 235, 0.5)',
+            user_joined: 'rgba(75, 192, 192, 0.5)',
+            user_left: 'rgba(255, 99, 132, 0.5)'
+        };
+
+        function updateChart(data) {
+            const ctx = document.getElementById('eventChart').getContext('2d');
+            
+            if (eventChart) {
+                eventChart.destroy();
+            }
+
+            eventChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(data.event_counts),
+                    datasets: [{
+                        label: 'Event Counts',
+                        data: Object.values(data.event_counts),
+                        backgroundColor: Object.keys(data.event_counts).map(type => colors[type])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = data.recent_events.map(event => {
+                const className = event.event_type === 'user_joined' ? 'user-joined' : 
+                                event.event_type === 'user_left' ? 'user-left' : '';
+                return `<div class="message ${className}">
+                    [${new Date(event.created_at).toLocaleTimeString()}] 
+                    ${event.event_type}: ${event.event_payload}
+                </div>`;
+            }).join('');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function fetchMetrics() {
+            fetch('/metrics/data')
+                .then(response => response.json())
+                .then(data => updateChart(data));
+        }
+
+        // Update every 5 seconds
+        setInterval(fetchMetrics, 5000);
+        fetchMetrics();
+    </script>
+</body>
+</html>
