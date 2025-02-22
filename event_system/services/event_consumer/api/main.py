@@ -88,27 +88,21 @@ async def metrics_page(request: Request):
 
 @app.get("/metrics/data")
 async def metrics_data(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(
-        select(Event.event_type, func.count(Event.id))
-        .group_by(Event.event_type)
-    )
-    event_counts = dict(result.all())
+    repository = EventRepository(session)
+    
+    event_counts = await repository.get_event_counts()
+    recent_events = await repository.get_recent_events()
 
-    result = await session.execute(
-        select(Event)
-        .order_by(Event.created_at.desc())
-        .limit(20)
-    )
-    recent_events = [
+    recent_events_data = [
         {
             "event_type": event.event_type,
             "event_payload": event.event_payload,
             "created_at": event.created_at.isoformat()
         }
-        for event in result.scalars().all()
+        for event in recent_events
     ]
 
     return {
         "event_counts": event_counts,
-        "recent_events": recent_events[::-1] 
+        "recent_events": recent_events_data[::-1] 
     }

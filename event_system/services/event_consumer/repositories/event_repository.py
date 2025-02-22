@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List
+from sqlalchemy import func, select
+from typing import Dict, List
 from ..models.event import Event
 
 class EventRepository:
@@ -14,12 +14,17 @@ class EventRepository:
         await self._session.refresh(event)
         return event
 
-    async def get_all(self) -> List[Event]:
-        result = await self._session.execute(select(Event))
-        return result.scalars().all()
-
-    async def get_by_type(self, event_type: str) -> List[Event]:
+    async def get_event_counts(self) -> Dict[str, int]:
         result = await self._session.execute(
-            select(Event).where(Event.event_type == event_type)
+            select(Event.event_type, func.count(Event.id))
+            .group_by(Event.event_type)
+        )
+        return dict(result.all())
+
+    async def get_recent_events(self, limit: int = 20) -> List[Event]:
+        result = await self._session.execute(
+            select(Event)
+            .order_by(Event.created_at.desc())
+            .limit(limit)
         )
         return result.scalars().all()
