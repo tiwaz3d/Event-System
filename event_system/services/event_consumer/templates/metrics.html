@@ -83,8 +83,8 @@
                 .then(data => updateChart(data));
         }
 
-        // Update every 5 seconds
-        setInterval(fetchMetrics, 5000);
+        // Update every 500 miliseconds
+        setInterval(fetchMetrics, 500);
         fetchMetrics();
     </script>
 </body>
