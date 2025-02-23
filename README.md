@@ -3,9 +3,12 @@
 ## Prerequisites
 
 - Python 3.13+
-- Poetry
+- Poetry 2.1.1
 - Docker and Docker Compose
 - PostgreSQL 15+
+
+The services are ran with `docker-compose up -d` command.
+If running on a windows machine, use wsl2.
 
 ## Setup
 
@@ -16,6 +19,9 @@ cd Event-System
 ```
 
 2. Install Poetry:
+   
+(Required if dependencies need to be added otherwise docker-build takes care of this step
+Same goes for steps 3 and 4 )
 ```bash
 sudo apt update && sudo apt install curl python3-venv -y
 curl -sSL https://install.python-poetry.org | python3 -
@@ -44,7 +50,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 ```
 
 6. Set up the `.env` file:
-Create a file at `Project/event_system/.env` with the following content:
+Create a file at `Event-System/event_system/.env` with the following content:
 ```env
 EVENT_CONSUMER_POSTGRES_DB=event_system
 EVENT_CONSUMER_POSTGRES_USER=admin
@@ -63,8 +69,19 @@ poetry run alembic upgrade head
 
 8. Start the services:
 ```bash
-make docker build
-make docker compose up -d
+docker-compose build
+docker-compose up -d
+
+# To shut down
+docker-compose down
+```
+
+9. [Optional] Logs for the services can be seen with:
+```bash
+docker-compose logs -f
+
+# For a specific container:
+# docker-compose logs <container> -f
 ```
 
 ## Configuration
