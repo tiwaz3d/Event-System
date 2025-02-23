@@ -1,23 +1,24 @@
 import asyncio
 import json
-import random
-import httpx
 import logging
+import random
 import sys
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+import httpx
 
 from ...shared.config.settings import PropagatorSettings
 
-
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('/event_system/event_system/logs/app.log', mode='a')
-    ]
+        logging.FileHandler("/event_system/event_system/logs/app.log", mode="a"),
+    ],
 )
 logger = logging.getLogger(__name__)
+
 
 class EventPropagator:
     def __init__(self, settings: PropagatorSettings):
@@ -25,10 +26,7 @@ class EventPropagator:
         self.target_url = settings.target_url
         self.events_file = settings.events_file
         self.events: List[Dict[str, Any]] = []
-        self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(10.0),
-            limits=httpx.Limits(max_keepalive_connections=5)
-        )
+        self.client = httpx.AsyncClient(timeout=httpx.Timeout(10.0), limits=httpx.Limits(max_keepalive_connections=5))
 
     async def __aenter__(self):
         await self.load_events()
@@ -39,7 +37,7 @@ class EventPropagator:
 
     async def load_events(self):
         try:
-            with open(self.events_file, 'r') as f:
+            with open(self.events_file, "r") as f:
                 self.events = json.load(f)
             logger.info(f"Loaded {len(self.events)} events from {self.events_file}")
         except Exception as e:
@@ -65,10 +63,12 @@ class EventPropagator:
                 logger.error(f"Error in event propagation: {e}")
                 await asyncio.sleep(self.interval)
 
+
 async def main():
     settings = PropagatorSettings()
     async with EventPropagator(settings) as propagator:
         await propagator.run()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
