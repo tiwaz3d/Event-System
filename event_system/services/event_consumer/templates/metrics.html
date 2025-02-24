@@ -1,59 +1,181 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event System Metrics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
     <style>
-        .container { 
-            width: 80%; 
-            margin: 20px auto; 
+        :root {
+            --primary-color: #6366f1;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
         .chat-box {
-            height: 300px;
+            height: 400px;
             overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 20px;
+            border-radius: 0.5rem;
+            background: var(--bg-color);
+            padding: 1rem;
         }
-        .message { margin: 5px 0; }
-        .user-joined { color: green; }
-        .user-left { color: red; }
+
+        .message {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 0.375rem;
+            background: var(--card-bg);
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            font-size: 0.875rem;
+        }
+
+        .message time {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .user-joined {
+            border-left: 3px solid var(--success-color);
+        }
+
+        .user-left {
+            border-left: 3px solid var(--error-color);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        /* Custom scrollbar */
+        .chat-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-box::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        .chat-box::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Event System Metrics</h2>
-        <div class="chat-box" id="chatBox"></div>
-        <canvas id="eventChart"></canvas>
+        <div class="header">
+            <h1>Event System Metrics</h1>
+            <p class="subtitle">Real-time event monitoring dashboard</p>
+        </div>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h2>Recent Events</h2>
+                <div class="chat-box" id="chatBox"></div>
+            </div>
+            <div class="card">
+                <h2>Event Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="eventChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         let eventChart;
         const colors = {
-            message: 'rgba(54, 162, 235, 0.5)',
-            user_joined: 'rgba(75, 192, 192, 0.5)',
-            user_left: 'rgba(255, 99, 132, 0.5)'
+            message: '#6366f1',
+            user_joined: '#22c55e',
+            user_left: '#ef4444'
         };
-
-        function updateChart(data) {
+    
+        function initChart(data) {
             const ctx = document.getElementById('eventChart').getContext('2d');
             
-            if (eventChart) {
-                eventChart.destroy();
-            }
-
             eventChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(data.event_counts),
+                    labels: [],
                     datasets: [{
                         label: 'Event Counts',
-                        data: Object.values(data.event_counts),
-                        backgroundColor: Object.keys(data.event_counts).map(type => colors[type])
+                        data: [],
+                        backgroundColor: []
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 250 // Faster animation
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -64,28 +186,47 @@
                     }
                 }
             });
-
+        }
+    
+        function updateChart(data) {
+            if (!eventChart) {
+                initChart(data);
+            }
+    
+            // Update existing chart data
+            const labels = Object.keys(data.event_counts);
+            const values = Object.values(data.event_counts);
+            const backgroundColors = labels.map(type => colors[type]);
+    
+            eventChart.data.labels = labels;
+            eventChart.data.datasets[0].data = values;
+            eventChart.data.datasets[0].backgroundColor = backgroundColors;
+            eventChart.update('none'); // Update without animation
+    
             const chatBox = document.getElementById('chatBox');
             chatBox.innerHTML = data.recent_events.map(event => {
                 const className = event.event_type === 'user_joined' ? 'user-joined' : 
                                 event.event_type === 'user_left' ? 'user-left' : '';
                 return `<div class="message ${className}">
-                    [${new Date(event.created_at).toLocaleTimeString()}] 
-                    ${event.event_type}: ${event.event_payload}
+                    <time>${new Date(event.created_at).toLocaleTimeString()}</time>
+                    <div><strong>${event.event_type}</strong>: ${event.event_payload}</div>
                 </div>`;
             }).join('');
             chatBox.scrollTop = chatBox.scrollHeight;
         }
-
+    
         function fetchMetrics() {
             fetch('/metrics/data')
                 .then(response => response.json())
-                .then(data => updateChart(data));
+                .then(data => updateChart(data))
+                .catch(error => console.error('Error fetching metrics:', error));
         }
-
-        // Update every 500 miliseconds
-        setInterval(fetchMetrics, 500);
+    
+        // Initial fetch
         fetchMetrics();
+    
+        // Update every 500ms
+        setInterval(fetchMetrics, 500);
     </script>
 </body>
 </html>
