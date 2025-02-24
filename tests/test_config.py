@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from event_system.shared.utils.logging import setup_logging
 
 TEST_DIR = Path(__file__).parent

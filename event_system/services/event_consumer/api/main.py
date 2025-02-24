@@ -18,7 +18,6 @@ from event_system.shared.config.settings import consumer_settings
 from ..repositories.event_repository import EventRepository
 from ..schemas.event import EventResponse, EventSchema
 
-
 logger = setup_logging("consumer")
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
