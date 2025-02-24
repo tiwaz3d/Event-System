@@ -6,18 +6,11 @@ import sys
 from typing import Any, Dict, List
 
 import httpx
+from shared.utils.logging import setup_logging
 
 from ...shared.config.settings import PropagatorSettings
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("/event_system/event_system/logs/app.log", mode="a"),
-    ],
-)
-logger = logging.getLogger(__name__)
+logger = setup_logging("propagator")
 
 
 class EventPropagator:

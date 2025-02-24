@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from shared.errors import EventSystemException
+from shared.utils.logging import setup_logging
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -17,15 +18,8 @@ from event_system.shared.config.settings import consumer_settings
 from ..repositories.event_repository import EventRepository
 from ..schemas.event import EventResponse, EventSchema
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("/event_system/event_system/logs/app.log", mode="a"),
-    ],
-)
-logger = logging.getLogger(__name__)
+
+logger = setup_logging("consumer")
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 app = FastAPI(title="Event Consumer Service")
