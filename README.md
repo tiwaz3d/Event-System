@@ -136,3 +136,26 @@ __pycache__/
 *$py.class
 .python-version
 ```
+
+### Extra info
+To run tests:
+```bash
+poetry run pytest tests
+```
+
+If db migrations fail, use this to create the table:
+```sql
+CREATE TABLE events (
+    id SERIAL PRIMARY KEY,
+    event_type VARCHAR NOT NULL,
+    event_payload VARCHAR NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+In case of issues with docker, to fully rebuild the image use:
+```bash
+docker-compose down
+docker-compose down -v
+docker-compose build --no-cache
+```
